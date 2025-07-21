@@ -31,8 +31,8 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="  ">
-      <div className="border-xl max-w-7xl mx-auto px-2 pt-0 py-6 flex justify-between items-center border-b-3 border-gray-100 bg-white  hover:bg-gray-50 hover:shadow-md transition-shadow">
+    <header className=" w-full ">
+      <div className="border-xl w-full mx-auto px-2 pt-0 py-8 flex justify-between items-center border-b-3 border-gray-100 bg-white  hover:bg-gray-50 hover:shadow-md transition-shadow">
         <div className="flex items-center space-x-1">
           <img src="../rf-logo.png" alt="Logo RF" className="h-20" />
          

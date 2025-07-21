@@ -1,5 +1,6 @@
 // src/components/SidebarMenu.tsx
 import React from "react";
+import Link from "next/link";
 import { User, Info, Globe, ChevronDown, ChevronUp, X } from "lucide-react";
 
 type SidebarMenuProps = {
@@ -39,7 +40,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose }) => {
       {/* Top Links */}
       <div className="flex flex-col p-4 space-y-3 border-b border-gray-200">
         <button className="flex items-center text-[#00007c] font-medium text-xl">
+          <Link href="../connexion">
           <User size={18} className="mr-2" /> Mon compte
+          </Link>
         </button>
         <button className="flex items-center text-[#00007c] font-medium m-3 text-xl">
           <Info size={18} className="mr-2" /> Qui sommes-nous?
