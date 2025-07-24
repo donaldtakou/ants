@@ -1,12 +1,13 @@
-"use client"
+"use client";
 import React, { useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-
-
+import axios from "axios";
 import { Info } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-// Interface TypeScript pour définir la structure des données utilisateur
+
 interface UserProfile {
   userType: 'Huissier' | 'Avocat' | 'Notaire' | 'Particulier' | '';
   civilite: 'Madame' | 'Monsieur' | '';
@@ -17,76 +18,173 @@ interface UserProfile {
     mois: string;
     annee: string;
   };
+  e_mail: string;
+  confirm_mail: string;
+  numero: number;
+  password: string;
+  confirm_password: string;
 }
 
-
 const LoginPage: React.FC = () => {
-  const [showPassword, setShowPassword] = useState(false);
-    const [tab, setTab] = useState(false); // 0: connexion, 1: création de compte
-  const [profile, setProfile] = useState("");
-  const [profileError, setProfileError] = useState(false);
-    const [isActive, setIsActive] = useState(false);
+
+  const router = useRouter();
+
+  const [tab, setTab] = useState(false); // false: connexion, true: création de compte
+  const [isActive, setIsActive] = useState(false);
+  const [step, setStep] = useState<number>(1);
+
+  /// loginnnn
+
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+const [showPassword, setShowPassword] = useState(false);
+const [error, setError] = useState<string | null>(null);
 
 
-  // Gestion du formulaire profil
-  const handleProfileSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setProfile(e.target.value);
-    setProfileError(false);
+  ////hummmmmm
+
+  const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    setError(null); // reset erreur
+    const res = await axios.post('https://backend-u7yr.onrender.com/api/auth/login', {
+      email,
+      password
+    });
+    
+    if (res.data.success) {
+      // Stocker le token (localStorage ou cookie)
+      localStorage.setItem('token', res.data.token);
+      // Rediriger
+      router.push('connexion/moncompte'); // ou la page où tu veux
+    }
+  } catch (err: any) {
+    console.error(err);
+    setError(err.response?.data?.message || "Erreur lors de la connexion.");
+  }
+};
+
+
+
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    userType: '',
+    civilite: '',
+    prenom: '',
+    nom: '',
+    dateNaissance: { jour: '', mois: '', annee: '' },
+    e_mail: '',
+    confirm_mail: '',
+    numero: 0,
+    password: '',
+    confirm_password: ''
+  });
+  const [inputCode, setInputCode] = useState("");
+  const [codeSent, setCodeSent] = useState(""); // on peut l’enlever si backend envoie
+  const [formData, setFormData] = useState<any>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === 'jour' || name === 'mois' || name === 'annee') {
+      setUserProfile(prev => ({
+        ...prev,
+        dateNaissance: { ...prev.dateNaissance, [name]: value }
+      }));
+    } else {
+      setUserProfile(prev => ({ ...prev, [name]: value }));
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleUserTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setUserProfile(prev => ({ ...prev, userType: e.target.value as UserProfile['userType'] }));
+  };
+
+  // Etape 1 : soumission du formulaire inscription
+  const handleSubmitStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) setProfileError(true);
-    // Ajoute ta logique de création de compte ici
+
+    if (userProfile.password !== userProfile.confirm_password) {
+      alert("Les mots de passe ne correspondent pas !");
+      return;
+    }
+    if (userProfile.e_mail !== userProfile.confirm_mail) {
+      alert("Les emails ne correspondent pas !");
+      return;
+    }
+
+    try {
+      await axios.post('https://backend-u7yr.onrender.com/api/auth/register', {
+        email: userProfile.e_mail,
+        password: userProfile.password,
+        userType: userProfile.userType,
+        prenom: userProfile.prenom,
+        nom: userProfile.nom,
+        numero: userProfile.numero,
+        dateNaissance: userProfile.dateNaissance,
+        code
+      });
+      alert("✅ Code envoyé par mail !");
+      setFormData(userProfile);
+      setStep(2);
+    } catch (error: any) {
+      console.error(error);
+      alert(error.response?.data?.message || "Erreur lors de l'enregistrement.....");
+    }
   };
+
+  // Etape 2 : vérification du code
+  const handleSubmitStep2 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await axios.post('https://backend-u7yr.onrender.com/api/auth/verify-code', {
+        email: userProfile.e_mail,
+        code: inputCode
+      });
+      alert("✅ Vérification réussie !");
+      setStep(3);
+    } catch (error: any) {
+      console.error(error);
+      alert(error.response?.data?.message || "Code invalide ou expiré");
+    }
+  };
+
+ 
+
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const { name, value } = e.target;
+
+  if (name === 'jour' || name === 'mois' || name === 'annee') {
+    setUserProfile(prev => ({
+      ...prev,
+      dateNaissance: { ...prev.dateNaissance, [name]: value }
+    }));
+  } else if (name === 'numero') {
+    setUserProfile(prev => ({
+      ...prev,
+      numero: parseInt(value) || 0
+    }));
+  } else {
+    setUserProfile(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+};
+
 
   const handleToggle = () => {
     setIsActive(prev => !prev);
   };
 
    // État pour stocker le profil utilisateur sélectionné
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    userType: '',
-    civilite: '',
-    prenom: '',
-    nom: '',
-    dateNaissance: {
-      jour: '',
-      mois: '',
-      annee: ''
-    }
-  });
+
 
   // État pour gérer l'étape actuelle du processus d'inscription
   const [currentStep, setCurrentStep] = useState<number>(1);
 
-  // Fonction pour gérer le changement de type d'utilisateur
-  const handleUserTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setUserProfile({
-      ...userProfile,
-      userType: event.target.value as UserProfile['userType']
-    });
-  };
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Fonction pour gérer les changements dans les champs du formulaire
-  const handleInputChange = (field: string, value: string) => {
-    if (field === 'jour' || field === 'mois' || field === 'annee') {
-      setUserProfile({
-        ...userProfile,
-        dateNaissance: {
-          ...userProfile.dateNaissance,
-          [field]: value
-        }
-      });
-    } else {
-      setUserProfile({
-        ...userProfile,
-        [field]: value
-      });
-    }
-  };
 
-  
 
   return (
     <div className="min-h-screen ">
@@ -167,7 +265,7 @@ const LoginPage: React.FC = () => {
           <h2 className="text-2xl font-bold mb-4">
             Me connecter avec un identifiant ANTS
           </h2>
-          <form className="flex flex-col space-y-7">
+<form onSubmit={handleLogin} className="flex flex-col space-y-7">
 
             {/* Identifiant */}
             <div>
@@ -176,7 +274,9 @@ const LoginPage: React.FC = () => {
               </label>
               <input
                 id="identifiant"
-                type="text"
+                type="mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full border-b-2 border-[#00007c] rounded bg-gray-100 py-3 px-3 focus:outline-none focus:ring-2 focus:ring-blue-900 transition"
               />
               <div>
@@ -204,6 +304,8 @@ const LoginPage: React.FC = () => {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full border-b-2 border-[#00007c] rounded bg-gray-100 py-3 px-3 focus:outline-none focus:ring-2 focus:ring-[#00007c] transition"
                 />
                
@@ -336,7 +438,7 @@ const LoginPage: React.FC = () => {
             </div>
             
             {/* Ligne de connexion entre étape 1 et 2 */}
-            <div className={`flex-1 h-0.5 mx-8 ${
+            <div className={`flex-1 h-0.5 mx ${
               currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
             }`}></div>
             
@@ -352,7 +454,7 @@ const LoginPage: React.FC = () => {
             </div>
             
             {/* Ligne de connexion entre étape 2 et 3 */}
-            <div className={`flex-1 h-0.5 mx-8 ${
+            <div className={`flex-1 h-0.5 mx ${
               currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'
             }`}></div>
             
@@ -386,11 +488,15 @@ const LoginPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-8 max-w-2xl mx-auto">
           
           {/* Message d'information sur les champs obligatoires */}
+          
+        {step === 1 &&(
+          <>
           <div className="mb-8">
             <p className="text-gray-700 text-base">
               Sauf mention contraire, tous les champs sont obligatoires.
             </p>
           </div>
+        
 
           {/* Section de sélection du profil utilisateur */}
           <div className="mb-8">
@@ -428,8 +534,10 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
 
+          
+
           {/* Message d'information avec icône */}
-          {userProfile.userType && userProfile.userType !== 'Particulier' && (
+          { userProfile.userType && userProfile.userType !== 'Particulier' && (
             <div className=" border-l-4 border-blue-400 p-2 mb-8">
               <div className="flex items-start">
                 {/* Icône d'information */}
@@ -452,6 +560,7 @@ const LoginPage: React.FC = () => {
 
           {/* Formulaire d'identité pour les particuliers */}
           {userProfile.userType === 'Particulier' && (
+            <form  onSubmit={handleSubmitStep1} >
             <div className="space-y-8">
               {/* Section Identité */}
               <div>
@@ -471,7 +580,7 @@ const LoginPage: React.FC = () => {
                         name="civilite"
                         value="Madame"
                         checked={userProfile.civilite === 'Madame'}
-                        onChange={(e) => handleInputChange('civilite', e.target.value)}
+                        onChange={handleInputChange}
                         className="w-5 h-5 text-blue-800 border-2 border-blue-700 focus:ring-blue-500"
                       />
                       <span className="ml-3 text-gray-700">Madame</span>
@@ -482,7 +591,7 @@ const LoginPage: React.FC = () => {
                         name="civilite"
                         value="Monsieur"
                         checked={userProfile.civilite === 'Monsieur'}
-                        onChange={(e) => handleInputChange('civilite', e.target.value)}
+                        onChange={handleInputChange}
                         className="w-5 h-5 text-blue-600 border-2 border-gray-300 focus:ring-blue-500"
                       />
                       <span className="ml-3 text-gray-700">Monsieur</span>
@@ -498,8 +607,8 @@ const LoginPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      value={userProfile.prenom}
-                      onChange={(e) => handleInputChange('prenom', e.target.value)}
+                       name="prenom"
+                     value={userProfile.prenom} onChange={handleChange}
                       className="w-full p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                       placeholder=""
                     />
@@ -510,8 +619,9 @@ const LoginPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                       name="nom"
                       value={userProfile.nom}
-                      onChange={(e) => handleInputChange('nom', e.target.value)}
+                      onChange={handleChange}
                       className="w-full p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                       placeholder=""
                     />
@@ -530,12 +640,14 @@ const LoginPage: React.FC = () => {
                       </label>
                       <p className="text-xs text-gray-400 mb-1">Exemple : 14</p>
                       <input
-                        type="text"
+                        type="number"
+                         name="jour"
                         value={userProfile.dateNaissance.jour}
-                        onChange={(e) => handleInputChange('jour', e.target.value)}
+                        onChange={handleInputChange}
                         className="w-full p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                         placeholder=""
                         maxLength={2}
+                        required
                       />
                     </div>
                     <div>
@@ -545,11 +657,13 @@ const LoginPage: React.FC = () => {
                       <p className="text-xs text-gray-400 mb-1">Exemple : 07</p>
                       <input
                         type="text"
+                        name="mois"
                         value={userProfile.dateNaissance.mois}
-                        onChange={(e) => handleInputChange('mois', e.target.value)}
+                        onChange={handleInputChange}
                         className="w-full p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                         placeholder=""
                         maxLength={2}
+                        required
                       />
                     </div>
                     <div>
@@ -559,11 +673,13 @@ const LoginPage: React.FC = () => {
                       <p className="text-xs text-gray-400 mb-1">Exemple : 1989</p>
                       <input
                         type="text"
+                        name="annee"
                         value={userProfile.dateNaissance.annee}
-                        onChange={(e) => handleInputChange('annee', e.target.value)}
+                        onChange={handleInputChange}
                         className="w-full p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                         placeholder=""
                         maxLength={4}
+                        required
                       />
                     </div>
                   </div>
@@ -583,11 +699,12 @@ const LoginPage: React.FC = () => {
                       <p className="text-xs text-gray-400 mb-4">Exemple de format attendu : nom@domaine.fr</p>
                       <input
                         type="mail"
-                        value={userProfile.dateNaissance.jour}
-                        onChange={(e) => handleInputChange('jour', e.target.value)}
+                        name="e_mail"
+                        value={userProfile.e_mail}
+                        onChange={handleInputChange}
                         className="w-full min-w-xl p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                         placeholder=""
-                        maxLength={2}
+                        required
                       />
 
                     </div>
@@ -604,11 +721,12 @@ const LoginPage: React.FC = () => {
                       <p className="text-xs text-gray-400 mb-4">Exemple de format attendu : nom@domaine.fr</p>
                       <input
                         type="mail"
-                        value={userProfile.dateNaissance.jour}
-                        onChange={(e) => handleInputChange('jour', e.target.value)}
+                         name="confirm_mail"
+                        value={userProfile.confirm_mail}
+                        onChange={handleInputChange}
                         className="w-full min-w-xl p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                         placeholder=""
-                        maxLength={2}
+                        required
                       />
 
                     </div>
@@ -630,17 +748,15 @@ const LoginPage: React.FC = () => {
                     
                      <div className="relative">
               <select
-                id="userType"
-                value={userProfile.userType}
-                onChange={handleUserTypeChange}
+                
                 className="w-full p-2 rounded max-w-40 border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                 required
               >
                 <option value=""></option>
-                <option value="Huissier">Huissier</option>
-                <option value="Avocat">Avocat</option>
-                <option value="Notaire">Notaire</option>
-                <option value="france">Particulier</option>
+                <option value="Huissier">France</option>
+                <option value="Avocat">belgique</option>
+                <option value="Notaire">allemagne</option>
+                <option value="france">canada</option>
               </select>
             </div>
                     
@@ -652,11 +768,13 @@ const LoginPage: React.FC = () => {
                       Numéro de téléphone
                     </label>
                     <input
-                      type="text"
-                      value={userProfile.nom}
-                      onChange={(e) => handleInputChange('nom', e.target.value)}
+                      type="number"
+                      name="numero"
+                      value={userProfile.numero}
+                      onChange={handleInputChange}
                       className="w-full min-w-70  p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                       placeholder=""
+
                     />
                   </div>
                   </div>
@@ -678,11 +796,13 @@ const LoginPage: React.FC = () => {
                     </label>
                     </div>
                     <input
-                      type="text"
-                      value={userProfile.prenom}
-                      onChange={(e) => handleInputChange('prenom', e.target.value)}
+                      type="password"
+                      name="password"
+                      value={userProfile.password}
+                      onChange={handleInputChange}
                       className="w-full p-2 rounded border-b-2 border-gray-700 bg-gray-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                       placeholder=""
+                      required
                     />
                   </div>
                   <div>
@@ -695,9 +815,10 @@ const LoginPage: React.FC = () => {
                     </label>
                     </div>
                     <input
-                      type="text"
-                      value={userProfile.nom}
-                      onChange={(e) => handleInputChange('nom', e.target.value)}
+                      type="password"
+                      name="confirm_password"
+                      value={userProfile.confirm_password}
+                      onChange={handleInputChange}
                       className="w-full p-2 border-b-2 border-gray-700 bg-gray-200 rounded focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200"
                       placeholder=""
                     />
@@ -721,7 +842,7 @@ const LoginPage: React.FC = () => {
                         <span className="text-center ml-20">J'ai pris connaissance des <a href="" className="border-b">conditions générales d'utilisation</a> </span>
                       </div>
                       <div className="justify-between items-centered">
-                        <button className="bg-[#00007c] ml-40 mt-6 p-3 items-center text-white text-xl cursor-pointer">
+                        <button type="submit" className="bg-[#00007c] ml-40 mt-6 p-3 items-center text-white text-xl cursor-pointer">
                             Créer mon compte
                         </button>
                       </div>
@@ -733,12 +854,71 @@ const LoginPage: React.FC = () => {
               </div>
 
             </div>
-          )}
+            </form>
+            
 
+         
+          )}
+         </> 
+        )}
+          
+
+
+<div>
+
+      {step === 2 && (
+  <form onSubmit={handleSubmitStep2} className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h2 className="text-2xl font-semibold text-gray-800 mb-4 text-center">
+      Vérification du code
+    </h2>
+    <p className="text-gray-600 mb-6 text-center">
+      Entrez le code que vous avez reçu par email pour confirmer votre inscription.
+    </p>
+    <input
+      type="text"
+      value={inputCode}
+      onChange={e => setInputCode(e.target.value)}
+      className="w-full p-3 border-b-2 border-gray-700 bg-gray-100 rounded focus:border-blue-500 focus:bg-white focus:outline-none transition-colors duration-200 mb-6"
+      placeholder="Code de vérification"
+      required
+    />
+    <button
+      type="submit"
+      className="w-full bg-[#00007c] text-white text-lg font-medium py-3 rounded hover:bg-blue-900 transition-colors duration-200"
+    >
+      Vérifier le code
+    </button>
+  </form>
+)}
+
+
+
+  {step === 3 && (
+  <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+    <div className="flex justify-center mb-4">
+      <span className="text-green-600 text-4xl">🎉</span>
+    </div>
+    <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+      Compte créé avec succès !
+    </h2>
+    <p className="text-gray-600 mb-6">
+      Vous pouvez maintenant vous connecter pour accéder à votre espace.
+    </p>
+    <Link href="/connexion" passHref>
+      <span className="block bg-[#00007c] text-white text-lg font-medium py-3 rounded hover:bg-blue-900 transition-colors duration-200 cursor-pointer">
+        Aller à la page de connexion
+      </span>
+    </Link>
+  </div>
+)}
+
+   
+</div>
         
         </div>
             </div>
             )}
+            
           </section>
         </div>
       )}
@@ -748,5 +928,7 @@ const LoginPage: React.FC = () => {
     </div>
   );
 };
+
+
 
 export default LoginPage;
