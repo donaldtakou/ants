@@ -79,31 +79,7 @@ export default function Home() {
         };
      
     
-      case 'Professionnels de l\'auto':
-        return {
-          title: 'Retrouvez toute l\'information vous concernant sur l\'espace dédié aux professionnels de l\'automobile sur les sites de France Titres',
-          subtitle: 'Me rendre sur le site pha.ants.gouv.fr',
-          showServices: true,
-          showMainServices: false,
-          showtitle : true
-        };
-         case 'Auto-écoles et CSSR':
-        return {
-          title: 'Retrouvez toute l\'information vous concernant sur l\'espace dédié aux professionnels de l\'auto-écoles et CSSR sur les sites de France Titres',
-          subtitle: 'Me rendre sur le site autoecole.ants.gouv.fr',
-          showServices: true,
-          showMainServices: false,
-          showtitle : true
-        };
-     
-      case 'Agent de mairie':
-        return {
-          title: 'Retrouvez toute l\'information vous concernant sur l\'espace dédié aux agents de mairie sur les sites de France Titres',
-          subtitle: 'Me rendre sur le site mairie.ants.gouv.fr',
-          showServices: true,
-          showMainServices: false,
-          showtitle : true
-        };
+      
       default:
         return {};
     }

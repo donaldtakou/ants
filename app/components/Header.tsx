@@ -43,7 +43,7 @@ export default function Header() {
           </button>
 
           <button onClick={() => setIsMenuOpen(true)}
-                   className=" px-2   pl-0  cursor-pointer">
+                   className="  cursor-pointer">
          <Menu />
             
           </button>

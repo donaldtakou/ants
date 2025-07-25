@@ -161,7 +161,7 @@ export default function Home() {
       icon: (
         <Icap1 />
       ),
-      lien: " "
+      lien: "/immatriculation"
     },
     {
       title: 'Permis de conduire',
@@ -310,16 +310,20 @@ export default function Home() {
           
              <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
         {/* Main Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
+       {/* Main Cards Grid */}
+        {content.showMainServices && (<div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 mb-4 mt-4 sm:mb-12">
           {mainCards.map((card, index) => (
-            <div key={index} className="bg-white  border-b-4 border-[#00007c] p-8 sm:p-10 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex flex-col items-center text-center">
+            <div key={index} className="bg-white  border-b-4 border-[#00007c] p-6 sm:p-4 hover:shadow-md transition-shadow cursor-pointer">
+              <a href={card.lien}><div className="flex flex-col items-center text-center">
                 <div className="mb-6">{card.icon}</div>
-                <h3 className="text-xl sm:text-xl font-bold text-[#00007c] mb-4 leading-tight">{card.title}</h3>
+                <h3 className=" sm:text-xl font-bold text-[#00007c]  mb-6 leading-tight">{card.title}</h3>
+               
               </div>
+               </a>
             </div>
           ))}
         </div>
+        )}
 
       </div>
       
